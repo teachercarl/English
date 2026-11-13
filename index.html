@@ -8554,12 +8554,21 @@ ${existingText}
                 if (generatedText) {
                     if (!existingText) {
                         // Parse text and questions
-                        const parts = generatedText.split(/\n?\s*-{2,}\s*題目\s*-{2,}\s*\n?/);
-                        if (parts.length >= 2) {
-                            readingTextTextarea.value = parts[0].replace(/```\w*/g, '').trim();
+                        const parts = generatedText.split(/\n?[ \t*#]*[-—–=_【\[]{1,}\s*題目\s*[-—–=_】\]]{1,}[ \t*#]*\n?/);
+                        console.log('AI 原始輸出：\n' + generatedText);
+                        if (parts.length >= 2 && parts[0].replace(/```\w*/g, '').trim()) {
+                            readingTextTextarea.value = parts[0].replace(/```\w*/g, '').split('\n')
+                                .filter(l => !/^[\s*#\-—=]*(閱讀)?(文本|文章|Reading)[\s*#\-—=:：]*$/i.test(l))
+                                .join('\n').trim();
                             questionsTextarea.value = cleanQuestionLines(parts.slice(1).join('\n'));
                         } else {
-                            questionsTextarea.value = cleanQuestionLines(generatedText);
+                            // AI 沒有輸出分隔線時：題目行（6 欄以上）放題目框，其餘當作文本
+                            const isQ = (l) => { const c = l.replace(/\*\*/g, '').trim(); return c.split(c.includes('\t') ? '\t' : ',').length >= 6 && /\t/.test(c); };
+                            const lines = generatedText.replace(/```\w*/g, '').split('\n');
+                            readingTextTextarea.value = lines.filter(l => !isQ(l))
+                                .filter(l => !/^[\s*#\-—=]*(閱讀)?(文本|文章|題目|選擇題|Reading|Questions?)[\s*#\-—=:：]*$/i.test(l))
+                                .join('\n').replace(/\n{3,}/g, '\n\n').trim();
+                            questionsTextarea.value = cleanQuestionLines(lines.filter(isQ).join('\n'));
                         }
                     } else {
                         questionsTextarea.value = cleanQuestionLines(generatedText);
